@@ -14,6 +14,7 @@ categories = []
 edition = "2024"
 
 [dependencies]
+const_panic = { version = "0.2.15", default-features = false, features = ["rust_1_88", "non_basic", "derive"] }
 grammers-tl-types = { path = "../grammers-tl-types", version = "0.8.0" }
 log = "0.4.28"
 sqlite = "0.37.0"
