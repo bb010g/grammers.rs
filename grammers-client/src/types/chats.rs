@@ -58,7 +58,7 @@ impl AdminRightsBuilderInner {
                 || self.rights.manage_call;
             self.client
                 .invoke(&tl::functions::messages::EditChatAdmin {
-                    chat_id: self.peer_ref.into(),
+                    chat_id: self.peer_ref.id.bare_id().expect("PeerKind::Chat").get(),
                     user_id: self.user.clone(),
                     is_admin: promote,
                 })
@@ -188,7 +188,7 @@ impl<F: Future<Output = BuilderRes>> AdminRightsBuilder<F> {
             let mut participants = s.client.iter_participants(s.peer_ref);
             while let Some(participant) = participants.next().await? {
                 if matches!(participant.role, Role::Creator(_) | Role::Admin(_))
-                    && participant.user.bare_id() == uid
+                    && participant.user.bare_id().expect("PeerKind::User").get() == uid
                 {
                     s.rights = tl::types::ChatAdminRights {
                         change_info: true,
@@ -326,7 +326,7 @@ impl BannedRightsBuilderInner {
             if self.rights.view_messages {
                 self.client
                     .invoke(&tl::functions::messages::DeleteChatUser {
-                        chat_id: self.peer_ref.into(),
+                        chat_id: self.peer_ref.id.bare_id().expect("PeerKind::Chat").get(),
                         user_id: self.user.clone(),
                         revoke_history: false,
                     })

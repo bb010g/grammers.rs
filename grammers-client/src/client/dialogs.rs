@@ -175,7 +175,7 @@ impl Client {
         } else if peer.id.kind() == PeerKind::Chat {
             // TODO handle PEER_ID_INVALID and ignore it (happens when trying to delete deactivated chats)
             self.invoke(&tl::functions::messages::DeleteChatUser {
-                chat_id: peer.into(),
+                chat_id: peer.id.bare_id().expect("PeerKind::Chat").get(),
                 user_id: tl::enums::InputUser::UserSelf,
                 revoke_history: false,
             })

@@ -6,9 +6,13 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+use core::{
+    fmt,
+    num::{NonZero, NonZeroI64},
+};
+
 use grammers_session::types::PeerAuth;
 use grammers_tl_types as tl;
-use std::fmt;
 
 /// A broadcast channel.
 ///
@@ -106,8 +110,8 @@ impl Channel {
     }
 
     /// Return the unique identifier for this channel.
-    pub fn bare_id(&self) -> i64 {
-        self.raw.id
+    pub fn bare_id(&self) -> Option<NonZeroI64> {
+        <NonZero<_>>::new(self.raw.id)
     }
 
     pub(crate) fn auth(&self) -> PeerAuth {

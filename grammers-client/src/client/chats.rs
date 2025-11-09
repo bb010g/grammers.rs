@@ -19,6 +19,7 @@ use grammers_session::types::{PeerId, PeerKind, PeerRef};
 use grammers_tl_types as tl;
 use std::collections::VecDeque;
 use std::future::Future;
+use std::num::NonZeroI64;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -30,7 +31,7 @@ pub enum ParticipantIter {
     Empty,
     Chat {
         client: Client,
-        chat_id: i64,
+        chat_id: NonZeroI64,
         buffer: VecDeque<Participant>,
         total: Option<usize>,
     },
@@ -98,7 +99,9 @@ impl ParticipantIter {
             } => {
                 assert!(buffer.is_empty());
                 let tl::enums::messages::ChatFull::Full(full) = client
-                    .invoke(&tl::functions::messages::GetFullChat { chat_id: *chat_id })
+                    .invoke(&tl::functions::messages::GetFullChat {
+                        chat_id: chat_id.get(),
+                    })
                     .await?;
 
                 let chat = match full.full_chat {
@@ -323,7 +326,7 @@ impl ProfilePhotoIter {
     }
 }
 
-fn updates_to_chat(id: Option<i64>, updates: tl::enums::Updates) -> Option<Peer> {
+fn updates_to_chat(id: Option<NonZeroI64>, updates: tl::enums::Updates) -> Option<Peer> {
     use tl::enums::Updates;
 
     let chats = match updates {
@@ -334,7 +337,7 @@ fn updates_to_chat(id: Option<i64>, updates: tl::enums::Updates) -> Option<Peer>
 
     match chats {
         Some(chats) => match id {
-            Some(id) => chats.into_iter().find(|chat| chat.id() == id),
+            Some(id) => chats.into_iter().find(|chat| chat.id() == id.get()),
             None => chats.into_iter().next(),
         },
         None => None,
@@ -479,7 +482,7 @@ impl Client {
             self.set_banned_rights(chat, user).await
         } else if chat.id.kind() == PeerKind::Chat {
             self.invoke(&tl::functions::messages::DeleteChatUser {
-                chat_id: chat.into(),
+                chat_id: chat.id.bare_id().expect("PeerKind::Chat").get(),
                 user_id: user.into(),
                 revoke_history: false,
             })
@@ -634,7 +637,7 @@ impl Client {
             PeerKind::Chat => {
                 let mut res = match self
                     .invoke(&tl::functions::messages::GetChats {
-                        id: vec![peer.into()],
+                        id: vec![peer.id.bare_id().expect("PeerKind::Chat").get()],
                     })
                     .await?
                 {
@@ -688,7 +691,7 @@ impl Client {
                 tl::enums::InputUser::FromMessage(user) => user.user_id,
                 tl::enums::InputUser::UserSelf => {
                     let me = self.get_me().await?;
-                    me.bare_id()
+                    me.bare_id().map(NonZeroI64::get).unwrap_or(0)
                 }
                 tl::enums::InputUser::Empty => unreachable!(),
             };
@@ -696,7 +699,7 @@ impl Client {
             // Get chat and find user
             let chat = self
                 .invoke(&tl::functions::messages::GetFullChat {
-                    chat_id: chat.into(),
+                    chat_id: chat.id.bare_id().expect("PeerKind::Chat").get(),
                 })
                 .await?;
             let tl::enums::messages::ChatFull::Full(chat) = chat;
@@ -815,7 +818,7 @@ impl Client {
         let chat: PeerRef = chat.into();
         let channel = chat.into();
         Ok(updates_to_chat(
-            Some(chat.id.bare_id()),
+            Some(chat.id.bare_id().expect("PeerKind::Channel")),
             self.invoke(&tl::functions::channels::JoinChannel { channel })
                 .await?,
         ))

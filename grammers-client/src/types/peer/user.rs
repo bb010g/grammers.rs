@@ -8,7 +8,10 @@
 
 use grammers_session::types::PeerAuth;
 use grammers_tl_types as tl;
-use std::fmt;
+use std::{
+    fmt,
+    num::{NonZero, NonZeroI64},
+};
 
 /// Platform Identifier.
 #[non_exhaustive]
@@ -93,8 +96,8 @@ impl User {
     }
 
     /// Return the unique identifier for this user.
-    pub fn bare_id(&self) -> i64 {
-        self.raw.id()
+    pub fn bare_id(&self) -> Option<NonZeroI64> {
+        <NonZero<_>>::new(self.raw.id())
     }
 
     pub(crate) fn auth(&self) -> PeerAuth {

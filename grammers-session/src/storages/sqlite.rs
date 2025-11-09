@@ -215,16 +215,20 @@ impl Session for SqliteSession {
             let subtype = stmt.read::<Option<i64>, _>("subtype")?.map(|s| s as u8);
             Ok(match peer.kind() {
                 PeerKind::User | PeerKind::UserSelf => PeerInfo::User {
-                    id: PeerId::user(stmt.read::<i64, _>("peer_id")?).bare_id(),
+                    id: PeerId::user(stmt.read::<i64, _>("peer_id")?)
+                        .bare_id()
+                        .expect("PeerKind::User | PeerKind::UserSelf"),
                     auth: stmt
                         .read::<Option<i64>, _>("hash")?
                         .map(PeerAuth::from_hash),
                     bot: subtype.map(|s| s & PeerSubtype::UserBot as u8 != 0),
                     is_self: subtype.map(|s| s & PeerSubtype::UserSelf as u8 != 0),
                 },
-                PeerKind::Chat => PeerInfo::Chat { id: peer.bare_id() },
+                PeerKind::Chat => PeerInfo::Chat {
+                    id: peer.bare_id().expect("PeerKind::Chat"),
+                },
                 PeerKind::Channel => PeerInfo::Channel {
-                    id: peer.bare_id(),
+                    id: peer.bare_id().expect("PeerKind::Channel"),
                     auth: stmt
                         .read::<Option<i64>, _>("hash")?
                         .map(PeerAuth::from_hash),
@@ -253,7 +257,10 @@ impl Session for SqliteSession {
         } else {
             db.fetch_one(
                 "SELECT * FROM peer_info WHERE peer_id = :peer_id LIMIT 1",
-                &[(":peer_id", sqlite::Value::Integer(peer.bot_api_dialog_id()))],
+                &[(
+                    ":peer_id",
+                    sqlite::Value::Integer(peer.bot_api_dialog_id().get()),
+                )],
                 map_stmt,
             )
             .unwrap()
@@ -265,7 +272,7 @@ impl Session for SqliteSession {
         let mut stmt =
             db.0.prepare("INSERT OR REPLACE INTO peer_info VALUES (:peer_id, :hash, :subtype)")
                 .unwrap();
-        stmt.bind((":peer_id", peer.id().bot_api_dialog_id()))
+        stmt.bind((":peer_id", peer.id().bot_api_dialog_id().get()))
             .unwrap();
         if peer.auth() != PeerAuth::default() {
             stmt.bind((":hash", peer.auth().hash())).unwrap();
@@ -388,7 +395,10 @@ impl Session for SqliteSession {
 
 #[cfg(test)]
 mod tests {
-    use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
+    use std::{
+        net::{Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6},
+        num::NonZero,
+    };
 
     use {DcOption, KNOWN_DC_OPTIONS, PeerInfo, Session, UpdateState};
 
@@ -424,7 +434,7 @@ mod tests {
         assert_eq!(session.peer(PeerId::self_user()), None);
         assert_eq!(session.peer(PeerId::user(1)), None);
         let peer = PeerInfo::User {
-            id: 1,
+            id: <NonZero<_>>::new(1).expect("non-zero constant"),
             auth: None,
             bot: Some(true),
             is_self: Some(true),
@@ -435,7 +445,7 @@ mod tests {
 
         assert_eq!(session.peer(PeerId::channel(1)), None);
         let peer = PeerInfo::Channel {
-            id: 1,
+            id: <NonZero<_>>::new(1).expect("non-zero constant"),
             auth: Some(PeerAuth::from_hash(-1)),
             kind: Some(ChannelKind::Broadcast),
         };

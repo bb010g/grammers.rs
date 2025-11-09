@@ -8,7 +8,7 @@
 
 #![allow(deprecated)]
 use grammers_tl_types as tl;
-use std::collections::HashMap;
+use std::{collections::HashMap, num::NonZeroI64};
 
 use crate::types::{PeerAuth, PeerId, PeerInfo, PeerRef};
 
@@ -16,12 +16,12 @@ use crate::types::{PeerAuth, PeerId, PeerInfo, PeerRef};
 #[deprecated(note = "Use the Session::peer instead")]
 pub struct PeerAuthCache {
     hash_map: HashMap<PeerId, PeerAuth>,
-    self_id: Option<i64>,
+    self_id: Option<NonZeroI64>,
     self_bot: bool,
 }
 
 impl PeerAuthCache {
-    pub fn new(self_user: Option<(i64, bool)>) -> Self {
+    pub fn new(self_user: Option<(NonZeroI64, bool)>) -> Self {
         Self {
             hash_map: HashMap::new(),
             self_id: self_user.map(|user| user.0),
@@ -29,7 +29,7 @@ impl PeerAuthCache {
         }
     }
 
-    pub fn self_id(&self) -> i64 {
+    pub fn self_id(&self) -> NonZeroI64 {
         self.self_id
             .expect("tried to query self_id before it's known")
     }

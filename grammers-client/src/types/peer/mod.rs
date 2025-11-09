@@ -72,9 +72,17 @@ impl Peer {
     /// property.
     pub fn id(&self) -> PeerId {
         match self {
-            Self::User(user) => PeerId::user(user.bare_id()),
+            Self::User(user) => {
+                PeerId::user_checked(user.bare_id().expect("grammers_client::types::peer::User"))
+                    .expect("grammers_client::peer::User")
+            }
             Self::Group(group) => group.id(),
-            Self::Channel(channel) => PeerId::channel(channel.bare_id()),
+            Self::Channel(channel) => PeerId::channel_checked(
+                channel
+                    .bare_id()
+                    .expect("grammers_client::types::peer::Channel"),
+            )
+            .expect("grammers_client::types::peer::Channel"),
         }
     }
 
