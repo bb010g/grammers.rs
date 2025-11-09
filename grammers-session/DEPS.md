@@ -15,6 +15,10 @@ Used to log messages during update processing.
 
 Used to test that this file lists all dependencies from `Cargo.toml`.
 
+## snafu
+
+Used to create and work with error types.
+
 ## sqlite
 
 SQLite-based session storage.

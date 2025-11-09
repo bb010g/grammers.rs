@@ -16,6 +16,7 @@ edition = "2024"
 [dependencies]
 grammers-tl-types = { path = "../grammers-tl-types", version = "0.8.0" }
 log = "0.4.28"
+snafu = { version = "0.8.9", default-features = false, features = ["rust_1_81", "std"] }
 sqlite = "0.37.0"
 
 [dev-dependencies]
